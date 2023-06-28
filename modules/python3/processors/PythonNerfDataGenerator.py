@@ -147,6 +147,9 @@ class PythonNeRFDataGenerator(ivw.Processor):
 
 
     def capturing(self):
+        if self.imgRunner == 0:
+            self.setNeRFCamera()
+
         if self.imgRunner < self.nerfImageCounter.value:
             x = self.genDirections[self.imgRunner][0]
             y = self.genDirections[self.imgRunner][1]
@@ -233,24 +236,32 @@ class PythonNeRFDataGenerator(ivw.Processor):
         self.cameraParameters['ar'] = self.linkedProcessors['Camera'].camera.aspectRatio
         self.cameraParameters['near'] = self.linkedProcessors['Camera'].camera.nearPlane
         self.cameraParameters['far'] = self.linkedProcessors['Camera'].camera.farPlane
-        self.cameraParameters['viewMatrix'] = self.linkedProcessors['Camera'].camera.viewMatrix
-        self.cameraParameters['projectionMatrix'] = self.linkedProcessors['Camera'].camera.projectionMatrix
+        self.cameraParameters['viewMatrix'] = np.array(self.linkedProcessors['Camera'].camera.viewMatrix)   # corresponding to the numpy array used in NeRF
+        self.cameraParameters['projectionMatrix'] = np.array(self.linkedProcessors['Camera'].camera.projectionMatrix)
 
         # print(self.cameraParameters['projectionMatrix'])
-        # print(self.cameraParameters['viewMatrix'])
-        pass
+        # print(type(self.cameraParameters['viewMatrix']))
+        # print(self.cameraParameters['viewMatrix'].tolist())
+        # toRowMajor(self.linkedProcessors['Camera'].camera.viewMatrix)
 
-    def addNeRFData(self, key, value):
-        self.nerfData[key] = value
         pass
 
     def setNeRFCamera(self):
-        pass
+        self.nerfData['camera_model'] = "OPENGL_INVIWO"
+        self.nerfData['w'] = self.cameraParameters['w']
+        self.nerfData['h'] = self.cameraParameters['h']
+        self.nerfData['cx'] = self.cameraParameters['cx']
+        self.nerfData['cy'] = self.cameraParameters['cy']
+        self.nerfData['fov'] = self.cameraParameters['fov']
+        self.nerfData['ar'] = self.cameraParameters['ar']
+        self.nerfData['near'] = self.cameraParameters['near']
+        self.nerfData['far'] = self.cameraParameters['far']
+
 
     def addNeRFFrame(self):
         newFrame = {}
         newFrame['imgPath'] = f"{self.imgDir}{Path(self.genFiles[self.imgRunner]).name}"
-        newFrame['viewMatrix'] = self.cameraParameters['viewMatrix'].array.tolist()
+        newFrame['viewMatrix'] = self.cameraParameters['viewMatrix'].tolist()
 
         if 'frames' not in self.nerfData:
             self.nerfData['frames'] = []
@@ -272,3 +283,4 @@ def writingNeRF(jsonData, jsonFile):
     except:
         print(f'Error writing NeRF to {jsonFile}')
     pass
+
